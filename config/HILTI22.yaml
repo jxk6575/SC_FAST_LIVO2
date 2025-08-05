@@ -83,7 +83,7 @@ publish:
   blind_rgb_points: 0.0
 
 evo:
-  seq_name: "exp09_cupola"
+  seq_name: "exp01_construction_ground_level"
   pose_output_en: true
 
 pcd_save:

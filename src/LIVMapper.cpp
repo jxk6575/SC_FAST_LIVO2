@@ -110,7 +110,7 @@ void LIVMapper::readParameters(ros::NodeHandle &nh)
   nh.param<bool>("publish/dense_map_en", dense_map_en, false);
 
   // PGO参数读取
-  nh.param<bool>("pgo/pgo_integration_enable", pgo_integration_enable, false);
+  nh.param<bool>("pgo/pgo_integration_enable", pgo_integration_enable, true);
   nh.param<int>("pgo/pgo_update_frequency", pgo_update_frequency, 10);
   nh.param<bool>("pgo/pgo_state_update_enable", pgo_state_update_enable, true);
   nh.param<bool>("pgo/pgo_map_rebuild_enable", pgo_map_rebuild_enable, true);
@@ -423,6 +423,11 @@ void LIVMapper::handleLIO()
       evoFile.open(std::string(ROOT_DIR) + "Log/result/" + seq_name + ".txt", std::ios::out);
       pos_opend = true;
       if (!evoFile.is_open()) ROS_ERROR("open fail\n");
+      
+      // 添加Hilti挑战赛要求的文件头注释
+      evoFile << "# timestamp_s tx ty tz qx qy qz qw" << std::endl;
+      evoFile << "# FAST-LIVO2 with PGO integration" << std::endl;
+      evoFile << "# IMU pose in world frame (Hamilton quaternion)" << std::endl;
     } 
     else 
     {
@@ -431,7 +436,7 @@ void LIVMapper::handleLIO()
     }
     Eigen::Matrix4d outT;
     Eigen::Quaterniond q(_state.rot_end);
-    evoFile << std::fixed;
+    evoFile << std::fixed << std::setprecision(15);  // 提高精度以符合Hilti要求
     evoFile << LidarMeasures.last_lio_update_time << " " << _state.pos_end[0] << " " << _state.pos_end[1] << " " << _state.pos_end[2] << " "
             << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << std::endl;
   }
@@ -1437,7 +1442,7 @@ void LIVMapper::updateStateWithPGO()
   }
   
   // 采用渐进式更新策略
-  double updateWeight = 0.3;
+  double updateWeight = 0.1;
   
   // 渐进式更新位置
   state_updated.pos_end = state_updated.pos_end + 
@@ -1450,8 +1455,8 @@ void LIVMapper::updateStateWithPGO()
   state_updated.rot_end = interpolatedQuat.toRotationMatrix();
   
   // 轻微调整协方差矩阵
-  state_updated.cov(0,0) = state_updated.cov(1,1) = state_updated.cov(2,2) *= 0.8;
-  state_updated.cov(3,3) = state_updated.cov(4,4) = state_updated.cov(5,5) *= 0.8;
+  state_updated.cov(0,0) = state_updated.cov(1,1) = state_updated.cov(2,2) *= 0.9;
+  state_updated.cov(3,3) = state_updated.cov(4,4) = state_updated.cov(5,5) *= 0.9;
   
   // 更新当前状态
   _state = state_updated;

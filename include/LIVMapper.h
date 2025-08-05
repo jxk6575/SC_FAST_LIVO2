@@ -195,7 +195,7 @@ public:
   // PGO相关数据成员
   nav_msgs::Path pgoKeyframes;           // PGO优化后的关键帧
   std::queue<int> pgoKeyframeIds;        // PGO关键帧ID
-  bool pgo_integration_enable = false;   // PGO集成开关
+  bool pgo_integration_enable = true;   // PGO集成开关
   int pgo_update_frequency = 10;         // PGO更新频率
   int pgo_update_counter = 0;            // PGO更新计数器
   bool pgo_state_update_enable = true;   // PGO状态更新开关
