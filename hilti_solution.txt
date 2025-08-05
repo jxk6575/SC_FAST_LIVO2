@@ -1,0 +1,48 @@
+The submission will be ranked based on completeness of the trajectory as well as on the position accuracy (ATE).
+
+Solution
+Upload a .zip file with a list of text files named after the rosbag files.
+
+For Challenge 2022:
+
+BASEMENT_1.txt
+IC_OFFICE_1.txt
+OFFICE_MITTE_1.txt
+....
+For Challenge 2023:
+
+site1_handheld_1.txt
+site1_handheld_2.txt
+site1_handheld_3.txt
+....
+The text files should have the following content:
+
+# timestamp_s tx ty tz qx qy qz qw
+1.403636580013555527e+09 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+...
+The file should be space separated. Each line stands for the pose at the specified timestamp. The timestamps are in the unit of second and used to establish temporal correspondences with the groundtruth. The first pose should be no later than the starting times specified above, and only poses after the starting times will be used for evaluation.
+
+The pose is composed of translation (tx ty tz, in meters) and quaternion (in Hamilton quaternion, the w component is at the end). The pose should specify the pose of the IMU in the world frame. For example, after converting the pose to a transformation matrix Twi, one should be able to transform the homogeneous point coordinates in IMU frame to world frame as pw = Twi * pi.
+
+Do not publish your trajectory estimates, as we might re-use some of the datasets for future competitions.
+
+You are welcome to submit your own Lidar-IMU extrinsics if you perform your own calibration. We include this option specifically because:
+
+The robot observes Ground Control Points from the hemisphere Lidar.
+Majority of participant SLAM systems are Lidar driven
+SLAM is evaluated on the IMU reference frame
+To include your own extrinsics, simply include an `extrinsics_robot.yaml` in your .zip file. Note that the yaml file reference frames should be in the multical format, identical to what we provide to all participants.
+
+Report
+In addition to the estimated trajectories, the participants are required to submit a short report summarizing their approach. The reports of all teams will be published on the website upon submission. The format of the report is left to the discretion of the participants, however the report must specify the following information:
+
+A brief overview of the approach
+Filter or optimization-based (or else)?
+Is the method causal? (i.e. does not use information from the future to predict the pose at a given time).
+Is bundle adjustment (BA) used? What type of BA, e.g. full BA or sliding window BA?
+Is loop closing used?
+Exact sensor modalities used (IMU, stereo or mono, LIDAR data?)
+Total processing time for each sequence and the used hardware
+Whether the same set of parameters is used throughout all the sequences
+Whether manual alignment was performed for maps/trajectories in the multi-session submission.
+The participants are welcome to include further details of their approach, potential references to a paper describing the approach, or any other additional information.

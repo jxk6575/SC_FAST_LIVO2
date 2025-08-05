@@ -1,6 +1,6 @@
 wsl -d Ubuntu-18.04
 
-运行指令--原版--HKU_Lecture_Center_01
+运行指令--原版
 # 终端A：启动roscore
 roscore
 # 终端B：启动FAST-LIVO2
@@ -8,26 +8,27 @@ roslaunch fast_livo mapping_avia.launch
 # 终端C：播放数据
 rosbag play ~/fast_livo2_ws/datasets/HKU_Lecture_Center_01.bag
 
-运行指令--加入PGO--HKU_Lecture_Center_01
+运行指令--加入PGO
 # 终端A：启动roscore
 roscore
 # 终端B：启动FAST-LIVO2
-roslaunch ~/fast_livo2_ws/FAST-LIVO2-Mod/launch/mapping_avia.launch
+cd ~/fast_livo2_ws/FAST-LIVO2-Mod && export ROS_PACKAGE_PATH=$PWD:$ROS_PACKAGE_PATH
+roslaunch launch/mapping_avia.launch
 # 终端C：启动PGO
 roslaunch ~/fast_livo2_ws/FAST-LIVO2-Mod/PGO/launch/fastlivo2_pgo.launch
 # 终端D：播放数据
 rosbag play ~/fast_livo2_ws/datasets/HKU_Lecture_Center_01.bag
 
-运行指令--加入PGO--
+运行指令--加入PGO--Hilti
 # 终端A：启动roscore
 roscore
 # 终端B：启动FAST-LIVO2
-roslaunch ~/fast_livo2_ws/FAST-LIVO2-Mod/launch/mapping_hesaixt32_hilti22.launch
+cd ~/fast_livo2_ws/FAST-LIVO2-Mod && export ROS_PACKAGE_PATH=$PWD:$ROS_PACKAGE_PATH
+roslaunch launch/mapping_hesaixt32_hilti22.launch
 # 终端C：启动PGO
 roslaunch ~/fast_livo2_ws/FAST-LIVO2-Mod/PGO/launch/fastlivo2_pgo_hilti.launch
 # 终端D：播放数据
 rosbag play ~/fast_livo2_ws/datasets/exp01_construction_ground_level.bag
-
 
 # 编译指令
 # fast livo2
@@ -47,10 +48,6 @@ make -j4
 # 查看状态
 ps aux | grep fastlivo
 
-# 本地下载后移动数据集
-cp "/mnt/d/exp01_construction_ground_level.bag" ~/fast_livo2_ws/datasets/
-
-
 # 备份指令
 cp -r ~/fast_livo2_ws/FAST-LIVO2-Mod /mnt/c/Users/jxk33/Desktop/fast_livo2_ws_backup
 cp -r ~/fast_livo2_ws/FAST-LIVO2-Mod ~/fast_livo2_ws/FAST-LIVO2-Mod-Backup
@@ -58,6 +55,7 @@ cp -r ~/fast_livo2_ws/FAST-LIVO2-Mod/rviz_cfg /mnt/c/Users/jxk33/Desktop/rviz
 # 回退指令
 cd ~/fast_livo2_ws && rm -rf FAST-LIVO2-Mod❗❗❗
 cp -r ~/fast_livo2_ws/FAST-LIVO2-Mod-Backup/FAST-LIVO2-Mod ~/fast_livo2_ws/FAST-LIVO2-Mod❗❗❗
+cp -r /mnt/c/Users/jxk33/Desktop/SC_FAST_LIVO2-main ~/fast_livo2_ws/FAST-LIVO2-Mod❗❗❗
 
 # 编辑指令
 code .
@@ -94,8 +92,15 @@ evo
 子任务3.2: 集成到体素地图管理器
 修改VoxelMapManager以支持PGO优化
 添加地图更新机制
-
-任务4：将视觉信息加入discriptor
+任务4：基本测试验证（必要）
+目标: 确保集成功能的正确性
+子任务4.1: 功能测试
+测试PGO数据订阅功能
+测试状态更新函数
+验证集成后的系统运行
+子任务4.2: 性能检查
+检查集成对系统性能的影响
+验证实时性要求
 
 1. Ori_FAST_LIO_LC的PGO集成机制
 关键特点：
