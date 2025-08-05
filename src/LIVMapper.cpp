@@ -184,8 +184,19 @@ void LIVMapper::initializeFiles()
           return;
       }
   }
-  if(colmap_output_en) fout_points.open(std::string(ROOT_DIR) + "Log/Colmap/sparse/0/points3D.txt", std::ios::out);
-  if(pcd_save_interval > 0) fout_pcd_pos.open(std::string(ROOT_DIR) + "Log/PCD/scans_pos.json", std::ios::out);
+      // 确保必要的目录存在
+    if(colmap_output_en) {
+      std::string colmap_dir = std::string(ROOT_DIR) + "Log/Colmap/sparse/0/";
+      std::string mkdir_cmd = "mkdir -p " + colmap_dir;
+      (void)system(mkdir_cmd.c_str());  // 忽略返回值
+      fout_points.open(std::string(ROOT_DIR) + "Log/Colmap/sparse/0/points3D.txt", std::ios::out);
+    }
+    if(pcd_save_interval > 0) {
+      std::string pcd_dir = std::string(ROOT_DIR) + "Log/PCD/";
+      std::string mkdir_cmd = "mkdir -p " + pcd_dir;
+      (void)system(mkdir_cmd.c_str());  // 忽略返回值
+      fout_pcd_pos.open(std::string(ROOT_DIR) + "Log/PCD/scans_pos.json", std::ios::out);
+    }
   fout_pre.open(DEBUG_FILE_DIR("mat_pre.txt"), std::ios::out);
   fout_out.open(DEBUG_FILE_DIR("mat_out.txt"), std::ios::out);
 }
@@ -401,6 +412,12 @@ void LIVMapper::handleLIO()
     static bool pos_opend = false;
     static int ocount = 0;
     std::ofstream outFile, evoFile;
+    
+    // 确保Log/result目录存在
+    std::string result_dir = std::string(ROOT_DIR) + "Log/result/";
+    std::string mkdir_cmd = "mkdir -p " + result_dir;
+    (void)system(mkdir_cmd.c_str());  // 忽略返回值
+    
     if (!pos_opend) 
     {
       evoFile.open(std::string(ROOT_DIR) + "Log/result/" + seq_name + ".txt", std::ios::out);
@@ -1237,6 +1254,11 @@ void LIVMapper::publish_frame_world(const ros::Publisher &pubLaserCloudFullRes, 
 
     if ((pcl_wait_save->size() > 0 || pcl_wait_save_intensity->size() > 0) && pcd_save_interval > 0 && scan_wait_num >= pcd_save_interval)
     {
+          // 确保PCD目录存在
+    std::string pcd_dir = std::string(ROOT_DIR) + "Log/PCD/";
+    std::string mkdir_cmd = "mkdir -p " + pcd_dir;
+    (void)system(mkdir_cmd.c_str());  // 忽略返回值
+      
       pcd_index++;
       string all_points_dir(string(string(ROOT_DIR) + "Log/PCD/") + to_string(pcd_index) + string(".pcd"));
       pcl::PCDWriter pcd_writer;
@@ -1415,7 +1437,7 @@ void LIVMapper::updateStateWithPGO()
   }
   
   // 采用渐进式更新策略
-  double updateWeight = 0.2;  // 只更新5%，更保守
+  double updateWeight = 0.3;
   
   // 渐进式更新位置
   state_updated.pos_end = state_updated.pos_end + 
@@ -1428,8 +1450,8 @@ void LIVMapper::updateStateWithPGO()
   state_updated.rot_end = interpolatedQuat.toRotationMatrix();
   
   // 轻微调整协方差矩阵
-  state_updated.cov(0,0) = state_updated.cov(1,1) = state_updated.cov(2,2) *= 0.8;  // 轻微降低位置不确定性
-  state_updated.cov(3,3) = state_updated.cov(4,4) = state_updated.cov(5,5) *= 0.8;  // 轻微降低旋转不确定性
+  state_updated.cov(0,0) = state_updated.cov(1,1) = state_updated.cov(2,2) *= 0.8;
+  state_updated.cov(3,3) = state_updated.cov(4,4) = state_updated.cov(5,5) *= 0.8;
   
   // 更新当前状态
   _state = state_updated;

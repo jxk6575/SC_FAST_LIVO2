@@ -1,0 +1,139 @@
+wsl -d Ubuntu-18.04
+
+运行指令--原版--HKU_Lecture_Center_01
+# 终端A：启动roscore
+roscore
+# 终端B：启动FAST-LIVO2
+roslaunch fast_livo mapping_avia.launch
+# 终端C：播放数据
+rosbag play ~/fast_livo2_ws/datasets/HKU_Lecture_Center_01.bag
+
+运行指令--加入PGO--HKU_Lecture_Center_01
+# 终端A：启动roscore
+roscore
+# 终端B：启动FAST-LIVO2
+roslaunch ~/fast_livo2_ws/FAST-LIVO2-Mod/launch/mapping_avia.launch
+# 终端C：启动PGO
+roslaunch ~/fast_livo2_ws/FAST-LIVO2-Mod/PGO/launch/fastlivo2_pgo.launch
+# 终端D：播放数据
+rosbag play ~/fast_livo2_ws/datasets/HKU_Lecture_Center_01.bag
+
+运行指令--加入PGO--
+# 终端A：启动roscore
+roscore
+# 终端B：启动FAST-LIVO2
+roslaunch ~/fast_livo2_ws/FAST-LIVO2-Mod/launch/mapping_hesaixt32_hilti22.launch
+# 终端C：启动PGO
+roslaunch ~/fast_livo2_ws/FAST-LIVO2-Mod/PGO/launch/fastlivo2_pgo_hilti.launch
+# 终端D：播放数据
+rosbag play ~/fast_livo2_ws/datasets/exp01_construction_ground_level.bag
+
+
+# 编译指令
+# fast livo2
+cd ~/fast_livo2_ws/FAST-LIVO2-Mod
+cp -r build build_backup && mv build_backup ../livo2_build_backup
+rm -rf build_backup && rm -rf build && mkdir build && cd build
+cmake ..
+make -j4
+
+# PGO
+cd ~/fast_livo2_ws/FAST-LIVO2-Mod/PGO && cp -r build build_backup && mv build_backup ../../livo2_build_backup
+rm -rf build_backup && rm -rf build && mkdir -p build && cd build
+cmake ..
+cd ..
+make -j4
+
+# 查看状态
+ps aux | grep fastlivo
+
+# 本地下载后移动数据集
+cp "/mnt/d/exp01_construction_ground_level.bag" ~/fast_livo2_ws/datasets/
+
+
+# 备份指令
+cp -r ~/fast_livo2_ws/FAST-LIVO2-Mod /mnt/c/Users/jxk33/Desktop/fast_livo2_ws_backup
+cp -r ~/fast_livo2_ws/FAST-LIVO2-Mod ~/fast_livo2_ws/FAST-LIVO2-Mod-Backup
+cp -r ~/fast_livo2_ws/FAST-LIVO2-Mod/rviz_cfg /mnt/c/Users/jxk33/Desktop/rviz
+# 回退指令
+cd ~/fast_livo2_ws && rm -rf FAST-LIVO2-Mod❗❗❗
+cp -r ~/fast_livo2_ws/FAST-LIVO2-Mod-Backup/FAST-LIVO2-Mod ~/fast_livo2_ws/FAST-LIVO2-Mod❗❗❗
+
+# 编辑指令
+code .
+
+# 目前任务
+gtsam->优化->pose graph 对比 导出g2o点云图对比, graph viewer
+evo
+
+✅ 任务一：添加PGO订阅者 - 已完成
+成功实现的功能：
+✅ 在LIVMapper.h中添加了PGO订阅者声明
+✅ 在LIVMapper.cpp中实现了PGO回调函数
+✅ 在initializeSubscribersAndPublishers()中注册了PGO订阅者
+✅ 添加了必要的头文件包含
+✅ 验证了话题连接成功
+
+✅ 任务2：实现状态更新机制 - 已完成
+成功实现的功能：
+✅ 实现了updateStateWithPGO()函数
+✅ 采用相对变换逻辑，参考Ori_FAST_LIO_LC的位姿变换公式
+✅ 集成到stateEstimationAndMapping()主循环中
+✅ 添加了更新频率控制（pgo_update_frequency参数）
+✅ 添加了配置参数（pgo_integration_enable等）
+✅ 实现了渐进式更新策略，避免状态突变
+✅ 添加了位姿差异检查，确保更新合理性
+✅ 修复了坐标变换问题，解决了PCL体素网格错误
+✅ 验证了系统运行稳定性，轨迹和图像正常
+
+任务3：实现地图重建机制（必要）
+目标: 使用PGO优化结果重建局部地图
+子任务3.1: 添加地图重建函数
+实现rebuildLocalMapWithPGO()函数
+使用优化后的位姿重新构建体素地图
+子任务3.2: 集成到体素地图管理器
+修改VoxelMapManager以支持PGO优化
+添加地图更新机制
+
+任务4：将视觉信息加入discriptor
+
+1. Ori_FAST_LIO_LC的PGO集成机制
+关键特点：
+订阅PGO优化结果: 通过keyFrame_cbk订阅/aft_pgo_path话题
+状态更新机制: 在map_incremental()中根据PGO优化结果更新当前状态
+地图重建: 使用优化后的关键帧位姿重建局部地图
+状态传播: 通过位姿变换公式更新当前状态
+核心代码逻辑：
+2. FAST-LIVO2系统的特点
+当前状态：
+独立运行: FAST-LIVO2和PGO模块独立运行
+单向通信: FAST-LIVO2发布位姿和点云，PGO订阅并优化
+无反馈机制: PGO优化结果未反馈到FAST-LIVO2
+3. 成熟可实施的集成方案
+混合集成（最优）
+目标: 结合轻量级和深度集成的优点
+实施步骤：
+a.分层集成
+底层：保持FAST-LIVO2核心算法不变
+中层：添加PGO结果订阅和状态更新
+上层：提供配置接口控制集成程度
+b.自适应机制
+根据PGO优化质量自动调整集成强度
+在回环检测时增强PGO影响
+在正常导航时保持FAST-LIVO2主导
+c.鲁棒性设计
+添加PGO结果有效性检查
+提供回退机制
+确保系统稳定性
+推荐实施方案原因如下：
+数学严谨性: 保持FAST-LIVO2的数学基础不变，只在必要时应用PGO优化
+可验证性: 可以分别验证FAST-LIVO2和PGO的性能
+灵活性: 可以根据不同场景调整集成程度
+稳定性: 提供回退机制，确保系统鲁棒性
+具体实施优先级：
+第一阶段: 实现轻量级集成，验证基本功能
+第二阶段: 添加自适应机制，优化集成效果
+第三阶段: 完善鲁棒性设计，确保系统稳定性
+
+首先请完整浏览代码，确认你了解项目结构和具体内容。请注意：这是一个科研项目，你的所有修改都要及其严谨、必要、不得违反数学知识，不得编造或模拟数据。
+现在请修改代码。请注意：你不应该随意猜测变量或方法名，而是应该仔细在项目中检查已有的代码，保障你的修改不会报错，并能准确达成目标。
