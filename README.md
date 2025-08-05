@@ -1,4 +1,4 @@
-# LC-FAST-LIVO2
+# SC-FAST-LIVO2
 
 ## License
 
