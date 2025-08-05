@@ -1,13 +1,16 @@
 <launch>
-<!-- Launch file for Livox AVIA LiDAR (Absolute Path) -->
+<!-- Launch file for Livox AVIA LiDAR with integrated path configuration -->
 
 	<arg name="rviz" default="true" />
 
+	<!-- 设置工作空间路径环境变量 -->
+	<env name="FAST_LIVO2_WS" value="$(find fast_livo)" />
+	
 	<!-- 直接加载配置文件 -->
 	<rosparam command="load" file="$(find fast_livo)/config/avia.yaml" />
 
-	<!-- 直接运行我们的可执行文件 -->
-	<node name="laserMapping" pkg="fast_livo" type="fastlivo_mapping" output="screen" args="/home/jxk6575/fast_livo2_ws/FAST-LIVO2-Mod/build/fastlivo_mapping">
+	<!-- 运行FAST-LIVO2主程序 -->
+	<node name="laserMapping" pkg="fast_livo" type="fastlivo_mapping" output="screen">
 		<rosparam file="$(find fast_livo)/config/camera_pinhole.yaml" />
 	</node>
 	

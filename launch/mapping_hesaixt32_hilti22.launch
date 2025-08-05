@@ -2,6 +2,9 @@
 
 	<arg name="rviz" default="true" />
 
+	<!-- 设置工作空间路径环境变量 -->
+	<env name="FAST_LIVO2_WS" value="$(find fast_livo)" />
+
 	<rosparam command="load" file="$(find fast_livo)/config/HILTI22.yaml" />
 
 	<node pkg="fast_livo" type="fastlivo_mapping" name="laserMapping" output="screen">
