@@ -29,18 +29,18 @@ roslaunch launch/mapping_hesaixt32_hilti22.launch
 roslaunch ~/fast_livo2_ws/FAST-LIVO2-Mod/PGO/launch/fastlivo2_pgo_hilti.launch
 # 终端D：播放数据
 rosbag play ~/fast_livo2_ws/datasets/exp01_construction_ground_level.bag
+rosbag play ~/fast_livo2_ws/datasets/exp21_outside_building.bag
 
 # 编译指令
 # fast livo2
 cd ~/fast_livo2_ws/FAST-LIVO2-Mod
-cp -r build build_backup && mv build_backup ../livo2_build_backup
-rm -rf build_backup && rm -rf build && mkdir build && cd build
+rm -rf build && mkdir build && cd build
 cmake ..
 make -j4
 
 # PGO
-cd ~/fast_livo2_ws/FAST-LIVO2-Mod/PGO && cp -r build build_backup && mv build_backup ../../livo2_build_backup
-rm -rf build_backup && rm -rf build && mkdir -p build && cd build
+cd ~/fast_livo2_ws/FAST-LIVO2-Mod/PGO
+rm -rf build && mkdir -p build && cd build
 cmake ..
 cd ..
 make -j4
@@ -57,32 +57,30 @@ cd ~/fast_livo2_ws && rm -rf FAST-LIVO2-Mod❗❗❗
 cp -r ~/fast_livo2_ws/FAST-LIVO2-Mod-Backup/FAST-LIVO2-Mod ~/fast_livo2_ws/FAST-LIVO2-Mod❗❗❗
 cp -r /mnt/c/Users/jxk33/Desktop/SC_FAST_LIVO2-main ~/fast_livo2_ws/FAST-LIVO2-Mod❗❗❗
 
+# 导数据
+cp "/mnt/d/exp21_outside_building.bag" ~/fast_livo2_ws/datasets
+
+cp "~/fast_livo2_ws/datasets/exp21_outside_building.bag" /mnt/d
+
 # 编辑指令
+cd ~/fast_livo2_ws/FAST-LIVO2-Mod
 code .
+
+# 导出hilti结果
+hilti.yaml中改名字，和.bag一样
+cd ~/hilti_submission
+cp ~/fast_livo2_ws/FAST-LIVO2-Mod/Log/result/exp01_construction_ground_level.txt ./exp01_construction_ground_level.txt
+cp ~/fast_livo2_ws/FAST-LIVO2-Mod/Log/result/exp21_outside_building.txt ./exp21_outside_building.txt
+zip -r hilti_submission.zip *.txt
+cp -r ~/hilti_submission/hilti_submission.zip /mnt/c/Users/jxk33/Desktop
+
+# evo可视化
+cd ~/fast_livo2_ws/FAST-LIVO2-Mod/Log/result/
+evo_traj tum exp01_construction_ground_level.txt exp21_outside_building.txt --plot
 
 # 目前任务
 gtsam->优化->pose graph 对比 导出g2o点云图对比, graph viewer
-evo
-
-✅ 任务一：添加PGO订阅者 - 已完成
-成功实现的功能：
-✅ 在LIVMapper.h中添加了PGO订阅者声明
-✅ 在LIVMapper.cpp中实现了PGO回调函数
-✅ 在initializeSubscribersAndPublishers()中注册了PGO订阅者
-✅ 添加了必要的头文件包含
-✅ 验证了话题连接成功
-
-✅ 任务2：实现状态更新机制 - 已完成
-成功实现的功能：
-✅ 实现了updateStateWithPGO()函数
-✅ 采用相对变换逻辑，参考Ori_FAST_LIO_LC的位姿变换公式
-✅ 集成到stateEstimationAndMapping()主循环中
-✅ 添加了更新频率控制（pgo_update_frequency参数）
-✅ 添加了配置参数（pgo_integration_enable等）
-✅ 实现了渐进式更新策略，避免状态突变
-✅ 添加了位姿差异检查，确保更新合理性
-✅ 修复了坐标变换问题，解决了PCL体素网格错误
-✅ 验证了系统运行稳定性，轨迹和图像正常
+visualize the loop and pose
 
 任务3：实现地图重建机制（必要）
 目标: 使用PGO优化结果重建局部地图
@@ -92,53 +90,6 @@ evo
 子任务3.2: 集成到体素地图管理器
 修改VoxelMapManager以支持PGO优化
 添加地图更新机制
-任务4：基本测试验证（必要）
-目标: 确保集成功能的正确性
-子任务4.1: 功能测试
-测试PGO数据订阅功能
-测试状态更新函数
-验证集成后的系统运行
-子任务4.2: 性能检查
-检查集成对系统性能的影响
-验证实时性要求
-
-1. Ori_FAST_LIO_LC的PGO集成机制
-关键特点：
-订阅PGO优化结果: 通过keyFrame_cbk订阅/aft_pgo_path话题
-状态更新机制: 在map_incremental()中根据PGO优化结果更新当前状态
-地图重建: 使用优化后的关键帧位姿重建局部地图
-状态传播: 通过位姿变换公式更新当前状态
-核心代码逻辑：
-2. FAST-LIVO2系统的特点
-当前状态：
-独立运行: FAST-LIVO2和PGO模块独立运行
-单向通信: FAST-LIVO2发布位姿和点云，PGO订阅并优化
-无反馈机制: PGO优化结果未反馈到FAST-LIVO2
-3. 成熟可实施的集成方案
-混合集成（最优）
-目标: 结合轻量级和深度集成的优点
-实施步骤：
-a.分层集成
-底层：保持FAST-LIVO2核心算法不变
-中层：添加PGO结果订阅和状态更新
-上层：提供配置接口控制集成程度
-b.自适应机制
-根据PGO优化质量自动调整集成强度
-在回环检测时增强PGO影响
-在正常导航时保持FAST-LIVO2主导
-c.鲁棒性设计
-添加PGO结果有效性检查
-提供回退机制
-确保系统稳定性
-推荐实施方案原因如下：
-数学严谨性: 保持FAST-LIVO2的数学基础不变，只在必要时应用PGO优化
-可验证性: 可以分别验证FAST-LIVO2和PGO的性能
-灵活性: 可以根据不同场景调整集成程度
-稳定性: 提供回退机制，确保系统鲁棒性
-具体实施优先级：
-第一阶段: 实现轻量级集成，验证基本功能
-第二阶段: 添加自适应机制，优化集成效果
-第三阶段: 完善鲁棒性设计，确保系统稳定性
 
 首先请完整浏览代码，确认你了解项目结构和具体内容。请注意：这是一个科研项目，你的所有修改都要及其严谨、必要、不得违反数学知识，不得编造或模拟数据。
-现在请修改代码。请注意：你不应该随意猜测变量或方法名，而是应该仔细在项目中检查已有的代码，保障你的修改不会报错，并能准确达成目标。
+请注意：你不应该随意猜测变量或方法名，而是应该仔细在项目中检查已有的代码，保障你的修改不会报错，逻辑严谨，并能准确达成目标。因此，你需要准确实施目标，频繁严谨地搜索查找代码，并且在修改代码后进行自检

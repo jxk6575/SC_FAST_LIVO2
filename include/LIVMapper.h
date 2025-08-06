@@ -71,6 +71,12 @@ public:
   void updateStateWithPGO();
   void rebuildLocalMapWithPGO();
 
+  // 关键帧管理和局部地图重建辅助函数
+  bool isKeyframe(const StatesGroup& current_state);
+  void addKeyframe(const PointCloudXYZI::Ptr& cloud, const StatesGroup& state, double timestamp);
+  void clearOldKeyframes();
+  PointCloudXYZI::Ptr extractLocalMap(const StatesGroup& current_state);
+
   std::mutex mtx_buffer, mtx_buffer_imu_prop;
   std::condition_variable sig_buffer;
 
@@ -202,6 +208,15 @@ public:
   bool pgo_map_rebuild_enable = true;    // PGO地图重建开关
   double pgo_update_weight = 0.05;        // PGO更新权重
   double pgo_cov_weight = 0.95;           // PGO协方差权重
+
+  // 关键帧存储相关成员变量（用于局部地图重建）
+  std::vector<PointCloudXYZI::Ptr> cloudKeyFrames;        // 存储关键帧点云
+  std::vector<geometry_msgs::PoseStamped> keyframePoses;  // 存储关键帧位姿
+  std::vector<double> keyframeTimes;                       // 存储关键帧时间戳
+  int maxKeyframeNum = 500;                               // 最大关键帧数量（减少内存占用）
+  double keyframeMeterGap = 2.0;                          // 关键帧选择距离阈值（更保守）
+  double keyframeDegGap = 15.0;                           // 关键帧选择角度阈值（更保守）
+  double surroundingKeyframeSearchRadius = 3.0;            // 局部地图搜索半径（更小）
 
   int frame_num = 0;
   double aver_time_consu = 0;

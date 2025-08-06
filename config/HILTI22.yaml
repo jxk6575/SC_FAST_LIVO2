@@ -93,6 +93,11 @@ pgo:
   pgo_map_rebuild_enable: true
   update_weight: 0.05
   cov_weight: 0.95
+  # 关键帧管理参数
+  max_keyframe_num: 500
+  keyframe_meter_gap: 2.0
+  keyframe_deg_gap: 15.0
+  surrounding_search_radius: 3.0
 
 pcd_save:
   pcd_save_en: false

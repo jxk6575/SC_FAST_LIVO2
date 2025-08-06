@@ -11,6 +11,8 @@ which is included as part of this source code package.
 */
 
 #include "LIVMapper.h"
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/common/transforms.h>
 
 LIVMapper::LIVMapper(ros::NodeHandle &nh)
     : extT(0, 0, 0),
@@ -116,6 +118,12 @@ void LIVMapper::readParameters(ros::NodeHandle &nh)
   nh.param<bool>("pgo/pgo_map_rebuild_enable", pgo_map_rebuild_enable, true);
   nh.param<double>("pgo/update_weight", pgo_update_weight, 0.05);
   nh.param<double>("pgo/cov_weight", pgo_cov_weight, 0.95);
+  
+  // 关键帧管理参数
+  nh.param<int>("pgo/max_keyframe_num", maxKeyframeNum, 500);
+  nh.param<double>("pgo/keyframe_meter_gap", keyframeMeterGap, 2.0);
+  nh.param<double>("pgo/keyframe_deg_gap", keyframeDegGap, 15.0);
+  nh.param<double>("pgo/surrounding_search_radius", surroundingKeyframeSearchRadius, 3.0);
 
   p_pre->blind_sqr = p_pre->blind * p_pre->blind;
 }
@@ -463,6 +471,12 @@ void LIVMapper::handleLIO()
   voxelmap_manager->UpdateVoxelMap(voxelmap_manager->pv_list_);
   std::cout << "[ LIO ] Update Voxel Map" << std::endl;
   _pv_list = voxelmap_manager->pv_list_;
+  
+  // 关键帧选择和管理
+  if (pgo_integration_enable && isKeyframe(_state)) {
+    addKeyframe(feats_down_body, _state, LidarMeasures.last_lio_update_time);
+    clearOldKeyframes();
+  }
   
   double t4 = omp_get_wtime();
 
@@ -1477,9 +1491,241 @@ void LIVMapper::rebuildLocalMapWithPGO()
     return;
   }
 
-  // 这里可以实现基于PGO优化结果的地图重建
-  // 由于FAST-LIVO2使用体素地图，重建逻辑相对复杂
-  // 暂时只更新状态，地图重建可以在后续版本中实现
-  
   std::cout << "[PGO] Local map rebuild triggered" << std::endl;
+  
+  // 检查PGO关键帧数量是否足够
+  if (pgoKeyframes.poses.size() < 5) {
+    std::cout << "[PGO] Not enough PGO keyframes (" << pgoKeyframes.poses.size() 
+              << "), skipping map rebuild" << std::endl;
+    return;
+  }
+  
+  // 获取当前位置
+  Eigen::Vector3d currentPos(_state.pos_end[0], _state.pos_end[1], _state.pos_end[2]);
+  
+  // 找到距离当前位置最近的关键帧
+  double minDistance = std::numeric_limits<double>::max();
+  int nearestKeyframeIdx = -1;
+  
+  for (size_t i = 0; i < pgoKeyframes.poses.size(); ++i) {
+    const geometry_msgs::PoseStamped& pgoPose = pgoKeyframes.poses[i];
+    Eigen::Vector3d keyframePos(
+      pgoPose.pose.position.x,
+      pgoPose.pose.position.y,
+      pgoPose.pose.position.z
+    );
+    
+    double distance = (currentPos - keyframePos).norm();
+    if (distance < minDistance) {
+      minDistance = distance;
+      nearestKeyframeIdx = i;
+    }
+  }
+  
+  if (nearestKeyframeIdx == -1) {
+    std::cout << "[PGO] No nearby keyframe found, skipping map rebuild" << std::endl;
+    return;
+  }
+  
+  // 检查距离是否合理
+  if (minDistance > 10.0) {  // 10米阈值
+    std::cout << "[PGO] Nearest keyframe too far (" << minDistance 
+              << "m), skipping map rebuild" << std::endl;
+    return;
+  }
+  
+  // 计算PGO优化前后的位姿差异
+  if (nearestKeyframeIdx < keyframePoses.size()) {
+    const geometry_msgs::PoseStamped& originalPose = keyframePoses[nearestKeyframeIdx];
+    const geometry_msgs::PoseStamped& pgoPose = pgoKeyframes.poses[nearestKeyframeIdx];
+    
+    // 计算位置差异
+    double dx = pgoPose.pose.position.x - originalPose.pose.position.x;
+    double dy = pgoPose.pose.position.y - originalPose.pose.position.y;
+    double dz = pgoPose.pose.position.z - originalPose.pose.position.z;
+    double translationDiff = sqrt(dx*dx + dy*dy + dz*dz);
+    
+    // 计算旋转差异
+    Eigen::Quaterniond originalQuat(
+      originalPose.pose.orientation.w,
+      originalPose.pose.orientation.x,
+      originalPose.pose.orientation.y,
+      originalPose.pose.orientation.z
+    );
+    Eigen::Quaterniond pgoQuat(
+      pgoPose.pose.orientation.w,
+      pgoPose.pose.orientation.x,
+      pgoPose.pose.orientation.y,
+      pgoPose.pose.orientation.z
+    );
+    double rotationDiff = originalQuat.angularDistance(pgoQuat) * 180.0 / M_PI;
+    
+    std::cout << "[PGO] Keyframe " << nearestKeyframeIdx 
+              << " pose difference - Trans: " << translationDiff 
+              << "m, Rot: " << rotationDiff << "deg" << std::endl;
+    
+    // 如果位姿差异太大，跳过地图重建
+    if (translationDiff > 2.0 || rotationDiff > 30.0) {
+      std::cout << "[PGO] Pose difference too large, skipping map rebuild" << std::endl;
+      return;
+    }
+  }
+  
+  // 提取局部地图（使用更保守的方法）
+  PointCloudXYZI::Ptr localMap = extractLocalMap(_state);
+  
+  if (localMap->empty()) {
+    std::cout << "[PGO] Local map is empty, skipping rebuild" << std::endl;
+    return;
+  }
+  
+  std::cout << "[PGO] Extracted local map with " << localMap->size() 
+            << " points from " << cloudKeyFrames.size() << " keyframes" << std::endl;
+  
+  // 不直接重建体素地图，而是更新现有的体素地图
+  // 这样可以保持地图的连续性，避免突然的偏差
+  
+  // 将局部地图点添加到现有的体素地图中
+  std::vector<pointWithVar> localMapPoints;
+  localMapPoints.reserve(localMap->size());
+  
+  for (size_t i = 0; i < localMap->size(); i++) {
+    pointWithVar pv;
+    pv.point_w << localMap->points[i].x, localMap->points[i].y, localMap->points[i].z;
+    
+    // 使用较小的协方差，表示这些点的不确定性较低
+    M3D var = M3D::Identity() * 0.005;  // 更小的协方差
+    pv.var = var;
+    localMapPoints.push_back(pv);
+  }
+  
+  // 更新体素地图（而不是重建）
+  if (!localMapPoints.empty()) {
+    voxelmap_manager->UpdateVoxelMap(localMapPoints);
+    std::cout << "[PGO] Updated voxel map with " << localMapPoints.size() << " points" << std::endl;
+  }
+}
+
+// 关键帧管理函数实现
+bool LIVMapper::isKeyframe(const StatesGroup& current_state)
+{
+  if (keyframePoses.empty()) {
+    return true;  // 第一个关键帧
+  }
+  
+  // 获取最后一个关键帧的位姿
+  const geometry_msgs::PoseStamped& lastKeyframePose = keyframePoses.back();
+  
+  // 计算位置差异
+  double dx = current_state.pos_end[0] - lastKeyframePose.pose.position.x;
+  double dy = current_state.pos_end[1] - lastKeyframePose.pose.position.y;
+  double dz = current_state.pos_end[2] - lastKeyframePose.pose.position.z;
+  double translationDiff = sqrt(dx*dx + dy*dy + dz*dz);
+  
+  // 计算旋转差异
+  Eigen::Quaterniond currentQuat(current_state.rot_end);
+  Eigen::Quaterniond lastQuat(
+    lastKeyframePose.pose.orientation.w,
+    lastKeyframePose.pose.orientation.x,
+    lastKeyframePose.pose.orientation.y,
+    lastKeyframePose.pose.orientation.z
+  );
+  double rotationDiff = currentQuat.angularDistance(lastQuat) * 180.0 / M_PI;  // 转换为度
+  
+  // 检查是否满足关键帧选择条件
+  return (translationDiff > keyframeMeterGap || rotationDiff > keyframeDegGap);
+}
+
+void LIVMapper::addKeyframe(const PointCloudXYZI::Ptr& cloud, const StatesGroup& state, double timestamp)
+{
+  // 创建新的关键帧点云副本
+  PointCloudXYZI::Ptr keyframeCloud(new PointCloudXYZI(*cloud));
+  cloudKeyFrames.push_back(keyframeCloud);
+  
+  // 创建关键帧位姿
+  geometry_msgs::PoseStamped keyframePose;
+  keyframePose.header.stamp = ros::Time(timestamp);
+  keyframePose.header.frame_id = "camera_init";
+  keyframePose.pose.position.x = state.pos_end[0];
+  keyframePose.pose.position.y = state.pos_end[1];
+  keyframePose.pose.position.z = state.pos_end[2];
+  
+  Eigen::Quaterniond quat(state.rot_end);
+  keyframePose.pose.orientation.w = quat.w();
+  keyframePose.pose.orientation.x = quat.x();
+  keyframePose.pose.orientation.y = quat.y();
+  keyframePose.pose.orientation.z = quat.z();
+  
+  keyframePoses.push_back(keyframePose);
+  keyframeTimes.push_back(timestamp);
+  
+  std::cout << "[PGO] Added keyframe " << cloudKeyFrames.size() 
+            << " at time " << timestamp << std::endl;
+}
+
+void LIVMapper::clearOldKeyframes()
+{
+  // 如果关键帧数量超过最大限制，删除最旧的关键帧
+  while (cloudKeyFrames.size() > maxKeyframeNum) {
+    cloudKeyFrames.erase(cloudKeyFrames.begin());
+    keyframePoses.erase(keyframePoses.begin());
+    keyframeTimes.erase(keyframeTimes.begin());
+  }
+}
+
+PointCloudXYZI::Ptr LIVMapper::extractLocalMap(const StatesGroup& current_state)
+{
+  if (cloudKeyFrames.empty()) {
+    return PointCloudXYZI::Ptr(new PointCloudXYZI());
+  }
+  
+  PointCloudXYZI::Ptr localMap(new PointCloudXYZI());
+  
+  // 获取当前位置
+  Eigen::Vector3d currentPos(current_state.pos_end[0], current_state.pos_end[1], current_state.pos_end[2]);
+  
+  // 使用更小的搜索半径，避免引入过多噪声
+  double searchRadius = std::min(surroundingKeyframeSearchRadius, 3.0);  // 最大3米
+  
+  // 遍历所有关键帧，选择在搜索半径内的关键帧
+  for (size_t i = 0; i < keyframePoses.size(); ++i) {
+    const geometry_msgs::PoseStamped& keyframePose = keyframePoses[i];
+    Eigen::Vector3d keyframePos(
+      keyframePose.pose.position.x,
+      keyframePose.pose.position.y,
+      keyframePose.pose.position.z
+    );
+    
+    // 计算距离
+    double distance = (currentPos - keyframePos).norm();
+    
+    if (distance <= searchRadius) {
+      // 优先使用原始关键帧位姿，避免PGO优化引入的误差
+      Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+      transform.translation() = keyframePos;
+      
+      Eigen::Quaterniond quat(
+        keyframePose.pose.orientation.w,
+        keyframePose.pose.orientation.x,
+        keyframePose.pose.orientation.y,
+        keyframePose.pose.orientation.z
+      );
+      transform.linear() = quat.toRotationMatrix();
+      
+      // 变换关键帧点云并添加到局部地图
+      PointCloudXYZI::Ptr transformedCloud(new PointCloudXYZI());
+      pcl::transformPointCloud(*cloudKeyFrames[i], *transformedCloud, transform.matrix());
+      *localMap += *transformedCloud;
+    }
+  }
+  
+  // 对局部地图进行更严格的降采样
+  if (localMap->size() > 0) {
+    pcl::VoxelGrid<PointType> voxelGrid;
+    voxelGrid.setLeafSize(0.2, 0.2, 0.2);  // 20cm体素大小，减少噪声
+    voxelGrid.setInputCloud(localMap);
+    voxelGrid.filter(*localMap);
+  }
+  
+  return localMap;
 }
