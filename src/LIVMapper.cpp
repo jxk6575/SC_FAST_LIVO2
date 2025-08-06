@@ -114,6 +114,8 @@ void LIVMapper::readParameters(ros::NodeHandle &nh)
   nh.param<int>("pgo/pgo_update_frequency", pgo_update_frequency, 10);
   nh.param<bool>("pgo/pgo_state_update_enable", pgo_state_update_enable, true);
   nh.param<bool>("pgo/pgo_map_rebuild_enable", pgo_map_rebuild_enable, true);
+  nh.param<double>("pgo/update_weight", pgo_update_weight, 0.05);
+  nh.param<double>("pgo/cov_weight", pgo_cov_weight, 0.95);
 
   p_pre->blind_sqr = p_pre->blind * p_pre->blind;
 }
@@ -1442,7 +1444,7 @@ void LIVMapper::updateStateWithPGO()
   }
   
   // 采用渐进式更新策略
-  double updateWeight = 0.1;
+  double updateWeight = pgo_update_weight;
   
   // 渐进式更新位置
   state_updated.pos_end = state_updated.pos_end + 
@@ -1455,8 +1457,8 @@ void LIVMapper::updateStateWithPGO()
   state_updated.rot_end = interpolatedQuat.toRotationMatrix();
   
   // 轻微调整协方差矩阵
-  state_updated.cov(0,0) = state_updated.cov(1,1) = state_updated.cov(2,2) *= 0.9;
-  state_updated.cov(3,3) = state_updated.cov(4,4) = state_updated.cov(5,5) *= 0.9;
+  state_updated.cov(0,0) = state_updated.cov(1,1) = state_updated.cov(2,2) *= pgo_cov_weight;
+  state_updated.cov(3,3) = state_updated.cov(4,4) = state_updated.cov(5,5) *= pgo_cov_weight;
   
   // 更新当前状态
   _state = state_updated;
