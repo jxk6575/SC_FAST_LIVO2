@@ -200,6 +200,8 @@ public:
   int pgo_update_counter = 0;            // PGO更新计数器
   bool pgo_state_update_enable = true;   // PGO状态更新开关
   bool pgo_map_rebuild_enable = true;    // PGO地图重建开关
+  double pgo_update_weight = 0.05;        // PGO更新权重
+  double pgo_cov_weight = 0.95;           // PGO协方差权重
 
   int frame_num = 0;
   double aver_time_consu = 0;

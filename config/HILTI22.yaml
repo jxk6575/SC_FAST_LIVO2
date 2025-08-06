@@ -86,6 +86,14 @@ evo:
   seq_name: "exp01_construction_ground_level"
   pose_output_en: true
 
+pgo:
+  pgo_integration_enable: true
+  pgo_update_frequency: 10
+  pgo_state_update_enable: true
+  pgo_map_rebuild_enable: true
+  update_weight: 0.05
+  cov_weight: 0.95
+
 pcd_save:
   pcd_save_en: false
   colmap_output_en: false # need to set interval = -1
