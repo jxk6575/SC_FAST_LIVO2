@@ -1,0 +1,57 @@
+<launch>
+
+    <param name="scan_line" type="int" value="32" />
+
+    <!-- if 1, do mapping 10 Hz, if 2, do mapping 5 Hz. Suggest to use 1, it will adjust frequence automaticlly -->
+    <param name="mapping_skip_frame" type="int" value="1" />
+
+    <!-- remove too closed points -->
+    <param name="minimum_range" type="double" value="0.1"/>
+
+    <!-- 针对HILTI数据集调整体素大小，避免整数溢出 -->
+    <param name="mapping_line_resolution" type="double" value="0.8"/>
+    <param name="mapping_plane_resolution" type="double" value="1.0"/>
+
+    <param name="mapviz_filter_size" type="double" value="0.5"/>
+
+    <!-- SC-A-LOAM - 针对大型建筑调整关键帧间隔 -->
+    <param name="keyframe_meter_gap" type="double" value="2.0"/>
+    <param name="keyframe_deg_gap" type="double" value="15.0"/>
+
+    <!-- Scan Context - 针对大型建筑调整参数 -->
+    <param name="sc_dist_thres" type="double" value="0.6"/> <!-- 增大阈值适应大型建筑 -->
+    <param name="sc_max_radius" type="double" value="80.0"/> <!-- 针对大型建筑使用更大的搜索半径 -->
+
+    <!-- loop closure - 针对大型建筑调整搜索参数 -->
+    <param name="historyKeyframeSearchRadius" value="5.0"/>
+    <param name="historyKeyframeSearchTimeDiff" value="60.0"/>
+    <param name="historyKeyframeSearchNum" value="30"/>
+    <param name="speedFactor" value="1"/>           <!-- 倍速因子 -->
+    <param name="loopClosureFrequency" value="2.0"/> <!-- 降低频率，适应大型建筑 -->
+    <param name="graphUpdateFrequency" value="1.0"/>
+    <param name="graphUpdateTimes" value="3"/> <!-- 减少更新次数 -->
+    <param name="loopNoiseScore" value="0.2"/> <!-- 增大噪声容忍度 -->
+    <param name="vizmapFrequency" value="5"/>
+    <param name="loopFitnessScoreThreshold" value="0.5"/> <!-- 放宽ICP匹配阈值 -->
+
+    <param name="lidar_type" type="string" value="HesaiXT32"/>
+    
+    <!-- 适配FAST-LIVO2的话题映射 -->
+    <remap from="/velodyne_points" to="/velodyne_points"/>
+    <remap from="/aft_mapped_to_init" to="/aft_mapped_to_init"/>  <!-- FAST-LIVO2的位姿话题 -->
+    <remap from="/velodyne_cloud_registered_local" to="/cloud_registered_local"/>  <!-- FAST-LIVO2的点云话题 -->
+    <remap from="/cloud_for_scancontext" to="/cloud_registered_local"/>   <!-- 使用相同的点云话题 -->
+
+    <!-- utils -->
+    <param name="save_directory" type="string" value="$(env HOME)/Desktop/fastlivo2_pgo_hilti_data/"/>  <!-- HILTI专用保存目录 -->
+
+    <!-- nodes -->
+    <node pkg="aloam_velodyne" type="alaserPGO" name="alaserPGO" output="screen" /> <!-- Scan Context-based PGO -->
+
+    <!-- visulaization -->
+    <arg name="rviz" default="false" />
+    <group if="$(arg rviz)">
+        <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz_sc_pgo" args="-d $(find aloam_velodyne)/rviz_cfg/aloam_velodyne.rviz" />
+    </group>
+
+</launch> 

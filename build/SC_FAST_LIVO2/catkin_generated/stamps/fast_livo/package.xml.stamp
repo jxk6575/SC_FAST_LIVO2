@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>fast_livo</name>
+  <version>0.0.0</version>
+  <description>
+    FAST-LIVO (modified LOAM).
+    J. Zhang and S. Singh. LOAM: Lidar Odometry and Mapping in Real-time.
+    RSS 2014.
+  </description>
+
+  <maintainer email="dev@livoxtech.com">claydergc</maintainer>
+  <license>BSD</license>
+  <author email="zhangji@cmu.edu">Ji Zhang</author>
+
+  <!-- build tool -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- catkin package deps (与 CMakeLists.txt 保持一致) -->
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>tf</depend>
+  <depend>tf2</depend>        <!-- 新增 -->
+  <depend>tf2_ros</depend>    <!-- 新增 -->
+  <depend>image_transport</depend>
+  <depend>cv_bridge</depend>
+  <depend>pcl_ros</depend>
+
+  <!-- 这些是你项目引用到的其它catkin包 -->
+  <depend>vikit_common</depend>
+  <depend>vikit_ros</depend>
+
+  <!-- 只有在本包自己生成消息/服务时才需要。
+       若没有 .msg/.srv，可移除两行；不确定就先保留。 -->
+  <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
+
+  <!-- 可选：如果需要 rospy，就保留；否则可删 -->
+  <depend>rospy</depend>
+
+  <test_depend>rostest</test_depend>
+  <test_depend>rosbag</test_depend>
+
+  <export/>
+</package>

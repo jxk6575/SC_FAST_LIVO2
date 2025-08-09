@@ -1,0 +1,8 @@
+prefix=/home/developer/sc_fastlivo2/devel
+
+Name: pgo
+Description: Description of pgo
+Version: 1.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: roscpp std_msgs sensor_msgs nav_msgs geometry_msgs visualization_msgs tf pcl_ros pcl_conversions

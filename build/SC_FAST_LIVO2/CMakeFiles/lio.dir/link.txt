@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC   -O3 -DNDEBUG   -shared -Wl,-soname,liblio.so -o /home/developer/sc_fastlivo2/devel/lib/liblio.so CMakeFiles/lio.dir/src/voxel_map.cpp.o 

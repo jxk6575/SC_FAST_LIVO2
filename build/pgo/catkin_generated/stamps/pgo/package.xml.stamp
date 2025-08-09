@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>pgo</name>
+  <version>1.0.0</version>
+  <description>Pose Graph Optimization for FAST-LIVO2</description>
+
+  <maintainer email="2166245338@qq.com">Yuang Zhou</maintainer>
+  <license>MIT</license>
+
+  <!-- build tool -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+ 
+
+  <!-- unified deps -->
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>tf</depend>
+  <depend>pcl_ros</depend>
+  <depend>pcl_conversions</depend>
+  <depend>cv_bridge</depend>
+  <depend>image_transport</depend> <!-- 如果用到图像发布/订阅 -->
+  <depend>gtsam</depend>
+  <depend>fast_livo</depend>
+  <depend>eigen</depend>     <!-- 不行就换 eigen3 -->
+  <depend>opencv2</depend>   <!-- 不行就换 opencv -->
+
+  <export/>
+</package>

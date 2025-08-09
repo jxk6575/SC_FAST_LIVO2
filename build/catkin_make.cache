@@ -1,0 +1,2 @@
+SC_FAST_LIVO2:pgo:rpg_vikit/vikit_common:rpg_vikit/vikit_py:rpg_vikit/vikit_ros
+-DCATKIN_DEVEL_PREFIX=/home/developer/sc_fastlivo2/devel -DCMAKE_INSTALL_PREFIX=/home/developer/sc_fastlivo2/install -G Unix Makefiles

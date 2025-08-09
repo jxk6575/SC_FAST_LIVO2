@@ -1,0 +1,8 @@
+prefix=/home/developer/sc_fastlivo2/devel
+
+Name: vikit_py
+Description: Description of vikit_py
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
