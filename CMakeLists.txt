@@ -1,72 +1,87 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(fast_livo)
 
-set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_STANDARD 17)
 
 # Define ROOT_DIR
 add_definitions(-DROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/")
 
-# Find required packages
+# ----------------------- catkin & deps -----------------------
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  sensor_msgs
+  std_msgs
+  tf
+  tf2
+  tf2_ros
+  image_transport
+  cv_bridge
+  pcl_ros
+  vikit_common 
+  vikit_ros
+)
+
 find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED COMPONENTS thread)
 
-# Find OpenMP
+# OpenMP
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
   add_compile_options(${OpenMP_CXX_FLAGS})
   add_definitions(-DOMP_EN)
 endif()
 
-# Include directories
+# 导出给下游（本包也用得到）
+catkin_package(
+  CATKIN_DEPENDS roscpp sensor_msgs std_msgs tf tf2 tf2_ros image_transport cv_bridge pcl_ros
+  vikit_common vikit_ros
+  DEPENDS PCL OpenCV Boost
+  INCLUDE_DIRS include
+)
+
+# 包含路径（关键：${catkin_INCLUDE_DIRS}）
 include_directories(
-  ${EIGEN3_INCLUDE_DIR}
+  include
+  ${catkin_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   /usr/local/include
-  /opt/ros/melodic/include
-  include
 )
 
-# Add libraries
-add_library(vio src/vio.cpp src/frame.cpp src/visual_point.cpp)
-add_library(lio src/voxel_map.cpp)
-add_library(pre src/preprocess.cpp)
-add_library(imu_proc src/IMU_Processing.cpp)
+# ----------------------- 库与可执行文件 -----------------------
+add_library(vio          src/vio.cpp src/frame.cpp src/visual_point.cpp)
+add_library(lio          src/voxel_map.cpp)
+add_library(pre          src/preprocess.cpp)
+add_library(imu_proc     src/IMU_Processing.cpp)
 add_library(laser_mapping src/LIVMapper.cpp)
 
-# Add the main executable
+# 让消息/生成目标的依赖顺序正确
+add_dependencies(vio           ${catkin_EXPORTED_TARGETS})
+add_dependencies(lio           ${catkin_EXPORTED_TARGETS})
+add_dependencies(pre           ${catkin_EXPORTED_TARGETS})
+add_dependencies(imu_proc      ${catkin_EXPORTED_TARGETS})
+add_dependencies(laser_mapping ${catkin_EXPORTED_TARGETS})
+
 add_executable(fastlivo_mapping src/main.cpp)
 
-# Link libraries
+# 链接（关键：用 ${catkin_LIBRARIES}，别硬编码 ROS 路径）
 target_link_libraries(fastlivo_mapping
   laser_mapping
   vio
   lio
   pre
   imu_proc
+  ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
   ${OpenCV_LIBRARIES}
-  /opt/ros/melodic/lib/librosconsole.so
-  /opt/ros/melodic/lib/librosconsole_log4cxx.so
-  /opt/ros/melodic/lib/librosconsole_backend_interface.so
-  /opt/ros/melodic/lib/libroscpp.so
-  /opt/ros/melodic/lib/libroscpp_serialization.so
-  /opt/ros/melodic/lib/libtf.so
-  /opt/ros/melodic/lib/libtf2.so
-  /opt/ros/melodic/lib/libtf2_ros.so
-  /opt/ros/melodic/lib/librostime.so
-  /opt/ros/melodic/lib/libimage_transport.so
-  /opt/ros/melodic/lib/libcv_bridge.so
-  /usr/local/lib/libSophus.so
-  /usr/local/lib/libvikit_common.so
-  /usr/local/lib/libvikit_ros.so
   ${Boost_LIBRARIES}
 )
 
-# Link OpenMP if found
+# OpenMP 链接
 if(OpenMP_CXX_FOUND)
   target_link_libraries(fastlivo_mapping OpenMP::OpenMP_CXX)
 endif()

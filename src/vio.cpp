@@ -42,11 +42,26 @@ void VIOManager::initializeVIO()
 {
   visual_submap = new SubSparseMap;
 
-  fx = cam->fx();
-  fy = cam->fy();
-  cx = cam->cx();
-  cy = cam->cy();
-  image_resize_factor = cam->scale();
+  //fx = cam->fx();
+  //fy = cam->fy();
+  //cx = cam->cx();
+  //cy = cam->cy();
+  //image_resize_factor = cam->scale();
+auto* pin = dynamic_cast<vk::PinholeCamera*>(cam);
+if (!pin) throw std::runtime_error("VIOManager: camera is not vk::PinholeCamera");
+
+// fx, fy：focal_length() 返回 Eigen::Vector2d
+const Eigen::Vector2d f = pin->focal_length();
+fx = f.x();          // 或 f[0]
+fy = f.y();          // 或 f[1]
+
+// 主点：优先用 K()（很多分支都有）
+const Eigen::Matrix3d K = pin->K();   // 如果这一行报错，见“查名并替换”小节
+cx = K(0,2);
+cy = K(1,2);
+
+image_resize_factor = 1.0;
+
 
   printf("intrinsic: %.6lf, %.6lf, %.6lf, %.6lf\n", fx, fy, cx, cy);
 

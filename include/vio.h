@@ -22,6 +22,7 @@ which is included as part of this source code package.
 #include <vikit/robust_cost.h>
 #include <vikit/vision.h>
 #include <vikit/pinhole_camera.h>
+#include <Eigen/Core>
 
 struct SubSparseMap
 {
