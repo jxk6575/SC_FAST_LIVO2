@@ -1,15 +1,3 @@
-/* 
-This file is part of FAST-LIVO2: Fast, Direct LiDAR-Inertial-Visual Odometry.
-
-Developer: Chunran Zheng <zhengcr@connect.hku.hk>
-
-For commercial use, please contact me at <zhengcr@connect.hku.hk> or
-Prof. Fu Zhang at <fuzhang@hku.hk>.
-
-This file is subject to the terms and conditions outlined in the 'LICENSE' file,
-which is included as part of this source code package.
-*/
-
 #include "visual_point.h"
 #include "feature.h"
 #include <stdexcept>

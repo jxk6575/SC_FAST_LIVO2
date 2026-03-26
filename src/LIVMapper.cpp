@@ -111,7 +111,7 @@ void LIVMapper::readParameters(ros::NodeHandle &nh)
   nh.param<bool>("publish/pub_effect_point_en", pub_effect_point_en, false);
   nh.param<bool>("publish/dense_map_en", dense_map_en, false);
 
-  // PGO参数读取
+  // PGO parameters
   nh.param<bool>("pgo/pgo_integration_enable", pgo_integration_enable, true);
   nh.param<int>("pgo/pgo_update_frequency", pgo_update_frequency, 10);
   nh.param<bool>("pgo/pgo_state_update_enable", pgo_state_update_enable, true);
@@ -119,7 +119,7 @@ void LIVMapper::readParameters(ros::NodeHandle &nh)
   nh.param<double>("pgo/update_weight", pgo_update_weight, 0.05);
   nh.param<double>("pgo/cov_weight", pgo_cov_weight, 0.95);
   
-  // 关键帧管理参数
+  // Keyframe management parameters
   nh.param<int>("pgo/max_keyframe_num", maxKeyframeNum, 500);
   nh.param<double>("pgo/keyframe_meter_gap", keyframeMeterGap, 2.0);
   nh.param<double>("pgo/keyframe_deg_gap", keyframeDegGap, 15.0);
@@ -194,17 +194,17 @@ void LIVMapper::initializeFiles()
           return;
       }
   }
-      // 确保必要的目录存在
+      // Ensure required directories exist
     if(colmap_output_en) {
       std::string colmap_dir = std::string(ROOT_DIR) + "Log/Colmap/sparse/0/";
       std::string mkdir_cmd = "mkdir -p " + colmap_dir;
-      (void)system(mkdir_cmd.c_str());  // 忽略返回值
+      (void)system(mkdir_cmd.c_str());
       fout_points.open(std::string(ROOT_DIR) + "Log/Colmap/sparse/0/points3D.txt", std::ios::out);
     }
     if(pcd_save_interval > 0) {
       std::string pcd_dir = std::string(ROOT_DIR) + "Log/PCD/";
       std::string mkdir_cmd = "mkdir -p " + pcd_dir;
-      (void)system(mkdir_cmd.c_str());  // 忽略返回值
+      (void)system(mkdir_cmd.c_str());
       fout_pcd_pos.open(std::string(ROOT_DIR) + "Log/PCD/scans_pos.json", std::ios::out);
     }
   fout_pre.open(DEBUG_FILE_DIR("mat_pre.txt"), std::ios::out);
@@ -236,9 +236,9 @@ void LIVMapper::initializeSubscribersAndPublishers(ros::NodeHandle &nh, image_tr
   pubImuPropOdom = nh.advertise<nav_msgs::Odometry>("/LIVO2/imu_propagate", 10000);
   imu_prop_timer = nh.createTimer(ros::Duration(0.004), &LIVMapper::imu_prop_callback, this);
   voxelmap_manager->voxel_map_pub_= nh.advertise<visualization_msgs::MarkerArray>("/planes", 10000);
-  pubLaserCloudForPGO = nh.advertise<sensor_msgs::PointCloud2>("/cloud_registered_local", 100);  // 新增：为PGO发布的点云
-  
-  // PGO订阅者
+  pubLaserCloudForPGO = nh.advertise<sensor_msgs::PointCloud2>("/cloud_registered_local", 100);
+
+  // PGO subscribers
   subPGOKeyframes = nh.subscribe<nav_msgs::Path>("/aft_pgo_path", 10, &LIVMapper::pgoKeyframesCallback, this);
   subPGOKeyframeIds = nh.subscribe<std_msgs::Header>("/key_frames_ids", 10, &LIVMapper::pgoKeyframeIdsCallback, this);
 }
@@ -293,7 +293,7 @@ void LIVMapper::processImu()
 
 void LIVMapper::stateEstimationAndMapping() 
 {
-  // PGO状态更新
+  // PGO state update
   if (pgo_integration_enable && pgo_update_counter % pgo_update_frequency == 0) {
     updateStateWithPGO();
     if (pgo_map_rebuild_enable) {
@@ -423,10 +423,10 @@ void LIVMapper::handleLIO()
     static int ocount = 0;
     std::ofstream outFile, evoFile;
     
-    // 确保Log/result目录存在
+    // Ensure Log/result directory exists
     std::string result_dir = std::string(ROOT_DIR) + "Log/result/";
     std::string mkdir_cmd = "mkdir -p " + result_dir;
-    (void)system(mkdir_cmd.c_str());  // 忽略返回值
+    (void)system(mkdir_cmd.c_str());
     
     if (!pos_opend) 
     {
@@ -434,7 +434,7 @@ void LIVMapper::handleLIO()
       pos_opend = true;
       if (!evoFile.is_open()) ROS_ERROR("open fail\n");
       
-      // 添加Hilti挑战赛要求的文件头注释
+      // Hilti submission: file header comment
       evoFile << "# timestamp_s tx ty tz qx qy qz qw" << std::endl;
       evoFile << "# FAST-LIVO2 with PGO integration" << std::endl;
       evoFile << "# IMU pose in world frame (Hamilton quaternion)" << std::endl;
@@ -446,7 +446,7 @@ void LIVMapper::handleLIO()
     }
     Eigen::Matrix4d outT;
     Eigen::Quaterniond q(_state.rot_end);
-    evoFile << std::fixed << std::setprecision(15);  // 提高精度以符合Hilti要求
+    evoFile << std::fixed << std::setprecision(15);  // Hilti-format precision
     evoFile << LidarMeasures.last_lio_update_time << " " << _state.pos_end[0] << " " << _state.pos_end[1] << " " << _state.pos_end[2] << " "
             << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << std::endl;
   }
@@ -472,7 +472,7 @@ void LIVMapper::handleLIO()
   std::cout << "[ LIO ] Update Voxel Map" << std::endl;
   _pv_list = voxelmap_manager->pv_list_;
   
-  // 关键帧选择和管理
+  // Keyframe selection and management
   if (pgo_integration_enable && isKeyframe(_state)) {
     addKeyframe(feats_down_body, _state, LidarMeasures.last_lio_update_time);
     clearOldKeyframes();
@@ -630,7 +630,7 @@ void LIVMapper::imu_prop_callback(const ros::TimerEvent &e)
 {
   if (p_imu->imu_need_init || !new_imu || !ekf_finish_once) { return; }
   mtx_buffer_imu_prop.lock();
-  new_imu = false; // 控制propagate频率和IMU频率一致
+  new_imu = false; // align propagate rate with IMU rate
   if (imu_prop_enable && !prop_imu_buffer.empty())
   {
     static double last_t_from_lidar_end_time = 0;
@@ -1235,7 +1235,7 @@ void LIVMapper::publish_frame_world(const ros::Publisher &pubLaserCloudFullRes, 
   laserCloudmsg.header.frame_id = "camera_init";
   pubLaserCloudFullRes.publish(laserCloudmsg);
 
-  // 为PGO发布带有intensity字段的点云
+  // Publish point cloud with intensity for PGO
   PointCloudXYZI::Ptr laserCloudForPGO(new PointCloudXYZI());
   laserCloudForPGO->reserve(pcl_w_wait_pub->size());
   
@@ -1244,7 +1244,7 @@ void LIVMapper::publish_frame_world(const ros::Publisher &pubLaserCloudFullRes, 
     pgo_point.x = point.x;
     pgo_point.y = point.y;
     pgo_point.z = point.z;
-    pgo_point.intensity = point.intensity;  // 使用原始intensity数据
+    pgo_point.intensity = point.intensity;
     laserCloudForPGO->push_back(pgo_point);
   }
   
@@ -1275,10 +1275,10 @@ void LIVMapper::publish_frame_world(const ros::Publisher &pubLaserCloudFullRes, 
 
     if ((pcl_wait_save->size() > 0 || pcl_wait_save_intensity->size() > 0) && pcd_save_interval > 0 && scan_wait_num >= pcd_save_interval)
     {
-          // 确保PCD目录存在
+          // Ensure PCD output directory exists
     std::string pcd_dir = std::string(ROOT_DIR) + "Log/PCD/";
     std::string mkdir_cmd = "mkdir -p " + pcd_dir;
-    (void)system(mkdir_cmd.c_str());  // 忽略返回值
+    (void)system(mkdir_cmd.c_str());
       
       pcd_index++;
       string all_points_dir(string(string(ROOT_DIR) + "Log/PCD/") + to_string(pcd_index) + string(".pcd"));
@@ -1388,42 +1388,36 @@ void LIVMapper::publish_path(const ros::Publisher pubPath)
   pubPath.publish(path);
 }
 
-// PGO回调函数实现
+// PGO callbacks
 void LIVMapper::pgoKeyframesCallback(const nav_msgs::Path::ConstPtr &msg)
 {
-  // 更新PGO优化后的关键帧路径
   pgoKeyframes = *msg;
   std::cout << "[PGO] Received optimized keyframes, size: " << pgoKeyframes.poses.size() << std::endl;
 }
 
 void LIVMapper::pgoKeyframeIdsCallback(const std_msgs::Header::ConstPtr &msg)
 {
-  // 将关键帧ID添加到队列中
   pgoKeyframeIds.push(msg->seq);
   std::cout << "[PGO] Received keyframe ID: " << msg->seq << std::endl;
 }
 
-// PGO状态更新函数实现
+// PGO state correction
 void LIVMapper::updateStateWithPGO()
 {
   if (!pgo_integration_enable || !pgo_state_update_enable || pgoKeyframes.poses.empty()) {
     return;
   }
 
-  // 获取最新的PGO优化位姿
   const geometry_msgs::PoseStamped& latestPGOPose = pgoKeyframes.poses.back();
-  
-  // 手动将ROS位姿转换为Eigen格式
+
   Eigen::Isometry3d pgoPoseEigen = Eigen::Isometry3d::Identity();
-  
-  // 设置位置
+
   pgoPoseEigen.translation() = Eigen::Vector3d(
     latestPGOPose.pose.position.x,
     latestPGOPose.pose.position.y,
     latestPGOPose.pose.position.z
   );
-  
-  // 设置旋转（四元数转旋转矩阵）
+
   Eigen::Quaterniond quat(
     latestPGOPose.pose.orientation.w,
     latestPGOPose.pose.orientation.x,
@@ -1431,23 +1425,17 @@ void LIVMapper::updateStateWithPGO()
     latestPGOPose.pose.orientation.z
   );
   pgoPoseEigen.linear() = quat.toRotationMatrix();
-  
-  // 获取当前状态
+
   StatesGroup state_updated = _state;
-  
-  // 创建当前位姿的Eigen变换
+
   Eigen::Isometry3d currentPose(state_updated.rot_end);
   currentPose.pretranslate(state_updated.pos_end);
-  
-  // 修正：采用与FAST-LIO一致的变换逻辑
-  // 计算从当前位姿到PGO位姿的相对变换
-  // 这个变换表示从当前坐标系到PGO优化坐标系的变换
+
+  // Relative transform current -> PGO frame (consistent with FAST-LIO-style correction)
   Eigen::Isometry3d relativeTransform = pgoPoseEigen * currentPose.inverse();
-  
-  // 应用相对变换到当前位姿上，得到新的优化位姿
+
   Eigen::Isometry3d updatedPose = relativeTransform * currentPose;
-  
-  // 检查位姿差异是否合理
+
   double translationDiff = (updatedPose.translation() - currentPose.translation()).norm();
   double rotationDiff = Eigen::AngleAxisd(updatedPose.rotation() * currentPose.rotation().inverse()).angle();
   
@@ -1456,28 +1444,22 @@ void LIVMapper::updateStateWithPGO()
               << translationDiff << "m, Rot: " << rotationDiff << "rad" << std::endl;
     return;
   }
-  
-  // 采用渐进式更新策略
+
   double updateWeight = pgo_update_weight;
-  
-  // 渐进式更新位置
+
   state_updated.pos_end = state_updated.pos_end + 
                          updateWeight * (updatedPose.translation() - state_updated.pos_end);
-  
-  // 渐进式更新旋转
+
   Eigen::Quaterniond currentQuat(state_updated.rot_end);
   Eigen::Quaterniond targetQuat(updatedPose.rotation());
   Eigen::Quaterniond interpolatedQuat = currentQuat.slerp(updateWeight, targetQuat);
   state_updated.rot_end = interpolatedQuat.toRotationMatrix();
-  
-  // 轻微调整协方差矩阵
+
   state_updated.cov(0,0) = state_updated.cov(1,1) = state_updated.cov(2,2) *= pgo_cov_weight;
   state_updated.cov(3,3) = state_updated.cov(4,4) = state_updated.cov(5,5) *= pgo_cov_weight;
-  
-  // 更新当前状态
+
   _state = state_updated;
-  
-  // 更新体素地图管理器中的状态
+
   if (voxelmap_manager) {
     voxelmap_manager->state_ = _state;
   }
@@ -1492,18 +1474,15 @@ void LIVMapper::rebuildLocalMapWithPGO()
   }
 
   std::cout << "[PGO] Local map rebuild triggered" << std::endl;
-  
-  // 检查PGO关键帧数量是否足够
+
   if (pgoKeyframes.poses.size() < 5) {
     std::cout << "[PGO] Not enough PGO keyframes (" << pgoKeyframes.poses.size() 
               << "), skipping map rebuild" << std::endl;
     return;
   }
-  
-  // 获取当前位置
+
   Eigen::Vector3d currentPos(_state.pos_end[0], _state.pos_end[1], _state.pos_end[2]);
-  
-  // 找到距离当前位置最近的关键帧
+
   double minDistance = std::numeric_limits<double>::max();
   int nearestKeyframeIdx = -1;
   
@@ -1526,26 +1505,22 @@ void LIVMapper::rebuildLocalMapWithPGO()
     std::cout << "[PGO] No nearby keyframe found, skipping map rebuild" << std::endl;
     return;
   }
-  
-  // 检查距离是否合理
-  if (minDistance > 10.0) {  // 10米阈值
+
+  if (minDistance > 10.0) {  // meters
     std::cout << "[PGO] Nearest keyframe too far (" << minDistance 
               << "m), skipping map rebuild" << std::endl;
     return;
   }
-  
-  // 计算PGO优化前后的位姿差异
+
   if (nearestKeyframeIdx < keyframePoses.size()) {
     const geometry_msgs::PoseStamped& originalPose = keyframePoses[nearestKeyframeIdx];
     const geometry_msgs::PoseStamped& pgoPose = pgoKeyframes.poses[nearestKeyframeIdx];
-    
-    // 计算位置差异
+
     double dx = pgoPose.pose.position.x - originalPose.pose.position.x;
     double dy = pgoPose.pose.position.y - originalPose.pose.position.y;
     double dz = pgoPose.pose.position.z - originalPose.pose.position.z;
     double translationDiff = sqrt(dx*dx + dy*dy + dz*dz);
-    
-    // 计算旋转差异
+
     Eigen::Quaterniond originalQuat(
       originalPose.pose.orientation.w,
       originalPose.pose.orientation.x,
@@ -1563,15 +1538,13 @@ void LIVMapper::rebuildLocalMapWithPGO()
     std::cout << "[PGO] Keyframe " << nearestKeyframeIdx 
               << " pose difference - Trans: " << translationDiff 
               << "m, Rot: " << rotationDiff << "deg" << std::endl;
-    
-    // 如果位姿差异太大，跳过地图重建
+
     if (translationDiff > 2.0 || rotationDiff > 30.0) {
       std::cout << "[PGO] Pose difference too large, skipping map rebuild" << std::endl;
       return;
     }
   }
-  
-  // 提取局部地图（使用更保守的方法）
+
   PointCloudXYZI::Ptr localMap = extractLocalMap(_state);
   
   if (localMap->empty()) {
@@ -1581,48 +1554,41 @@ void LIVMapper::rebuildLocalMapWithPGO()
   
   std::cout << "[PGO] Extracted local map with " << localMap->size() 
             << " points from " << cloudKeyFrames.size() << " keyframes" << std::endl;
-  
-  // 不直接重建体素地图，而是更新现有的体素地图
-  // 这样可以保持地图的连续性，避免突然的偏差
-  
-  // 将局部地图点添加到现有的体素地图中
+
+  // Incrementally update voxel map (avoid full rebuild / discontinuity)
+
   std::vector<pointWithVar> localMapPoints;
   localMapPoints.reserve(localMap->size());
   
   for (size_t i = 0; i < localMap->size(); i++) {
     pointWithVar pv;
     pv.point_w << localMap->points[i].x, localMap->points[i].y, localMap->points[i].z;
-    
-    // 使用较小的协方差，表示这些点的不确定性较低
-    M3D var = M3D::Identity() * 0.005;  // 更小的协方差
+
+    M3D var = M3D::Identity() * 0.005;
     pv.var = var;
     localMapPoints.push_back(pv);
   }
-  
-  // 更新体素地图（而不是重建）
+
   if (!localMapPoints.empty()) {
     voxelmap_manager->UpdateVoxelMap(localMapPoints);
     std::cout << "[PGO] Updated voxel map with " << localMapPoints.size() << " points" << std::endl;
   }
 }
 
-// 关键帧管理函数实现
+// Keyframe helpers
 bool LIVMapper::isKeyframe(const StatesGroup& current_state)
 {
   if (keyframePoses.empty()) {
-    return true;  // 第一个关键帧
+    return true;
   }
-  
-  // 获取最后一个关键帧的位姿
+
   const geometry_msgs::PoseStamped& lastKeyframePose = keyframePoses.back();
-  
-  // 计算位置差异
+
   double dx = current_state.pos_end[0] - lastKeyframePose.pose.position.x;
   double dy = current_state.pos_end[1] - lastKeyframePose.pose.position.y;
   double dz = current_state.pos_end[2] - lastKeyframePose.pose.position.z;
   double translationDiff = sqrt(dx*dx + dy*dy + dz*dz);
-  
-  // 计算旋转差异
+
   Eigen::Quaterniond currentQuat(current_state.rot_end);
   Eigen::Quaterniond lastQuat(
     lastKeyframePose.pose.orientation.w,
@@ -1630,19 +1596,16 @@ bool LIVMapper::isKeyframe(const StatesGroup& current_state)
     lastKeyframePose.pose.orientation.y,
     lastKeyframePose.pose.orientation.z
   );
-  double rotationDiff = currentQuat.angularDistance(lastQuat) * 180.0 / M_PI;  // 转换为度
-  
-  // 检查是否满足关键帧选择条件
+  double rotationDiff = currentQuat.angularDistance(lastQuat) * 180.0 / M_PI;
+
   return (translationDiff > keyframeMeterGap || rotationDiff > keyframeDegGap);
 }
 
 void LIVMapper::addKeyframe(const PointCloudXYZI::Ptr& cloud, const StatesGroup& state, double timestamp)
 {
-  // 创建新的关键帧点云副本
   PointCloudXYZI::Ptr keyframeCloud(new PointCloudXYZI(*cloud));
   cloudKeyFrames.push_back(keyframeCloud);
-  
-  // 创建关键帧位姿
+
   geometry_msgs::PoseStamped keyframePose;
   keyframePose.header.stamp = ros::Time(timestamp);
   keyframePose.header.frame_id = "camera_init";
@@ -1665,7 +1628,6 @@ void LIVMapper::addKeyframe(const PointCloudXYZI::Ptr& cloud, const StatesGroup&
 
 void LIVMapper::clearOldKeyframes()
 {
-  // 如果关键帧数量超过最大限制，删除最旧的关键帧
   while (cloudKeyFrames.size() > maxKeyframeNum) {
     cloudKeyFrames.erase(cloudKeyFrames.begin());
     keyframePoses.erase(keyframePoses.begin());
@@ -1680,14 +1642,11 @@ PointCloudXYZI::Ptr LIVMapper::extractLocalMap(const StatesGroup& current_state)
   }
   
   PointCloudXYZI::Ptr localMap(new PointCloudXYZI());
-  
-  // 获取当前位置
+
   Eigen::Vector3d currentPos(current_state.pos_end[0], current_state.pos_end[1], current_state.pos_end[2]);
-  
-  // 使用更小的搜索半径，避免引入过多噪声
-  double searchRadius = std::min(surroundingKeyframeSearchRadius, 3.0);  // 最大3米
-  
-  // 遍历所有关键帧，选择在搜索半径内的关键帧
+
+  double searchRadius = std::min(surroundingKeyframeSearchRadius, 3.0);  // cap at 3 m
+
   for (size_t i = 0; i < keyframePoses.size(); ++i) {
     const geometry_msgs::PoseStamped& keyframePose = keyframePoses[i];
     Eigen::Vector3d keyframePos(
@@ -1696,11 +1655,10 @@ PointCloudXYZI::Ptr LIVMapper::extractLocalMap(const StatesGroup& current_state)
       keyframePose.pose.position.z
     );
     
-    // 计算距离
     double distance = (currentPos - keyframePos).norm();
-    
+
     if (distance <= searchRadius) {
-      // 优先使用原始关键帧位姿，避免PGO优化引入的误差
+      // Prefer raw keyframe poses (less PGO distortion)
       Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
       transform.translation() = keyframePos;
       
@@ -1712,17 +1670,15 @@ PointCloudXYZI::Ptr LIVMapper::extractLocalMap(const StatesGroup& current_state)
       );
       transform.linear() = quat.toRotationMatrix();
       
-      // 变换关键帧点云并添加到局部地图
       PointCloudXYZI::Ptr transformedCloud(new PointCloudXYZI());
       pcl::transformPointCloud(*cloudKeyFrames[i], *transformedCloud, transform.matrix());
       *localMap += *transformedCloud;
     }
   }
   
-  // 对局部地图进行更严格的降采样
   if (localMap->size() > 0) {
     pcl::VoxelGrid<PointType> voxelGrid;
-    voxelGrid.setLeafSize(0.2, 0.2, 0.2);  // 20cm体素大小，减少噪声
+    voxelGrid.setLeafSize(0.2, 0.2, 0.2);  // 20 cm leaf
     voxelGrid.setInputCloud(localMap);
     voxelGrid.filter(*localMap);
   }

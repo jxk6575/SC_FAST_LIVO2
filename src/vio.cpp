@@ -1,15 +1,3 @@
-/* 
-This file is part of FAST-LIVO2: Fast, Direct LiDAR-Inertial-Visual Odometry.
-
-Developer: Chunran Zheng <zhengcr@connect.hku.hk>
-
-For commercial use, please contact me at <zhengcr@connect.hku.hk> or
-Prof. Fu Zhang at <fuzhang@hku.hk>.
-
-This file is subject to the terms and conditions outlined in the 'LICENSE' file,
-which is included as part of this source code package.
-*/
-
 #include "vio.h"
 
 VIOManager::VIOManager()
@@ -50,13 +38,13 @@ void VIOManager::initializeVIO()
 auto* pin = dynamic_cast<vk::PinholeCamera*>(cam);
 if (!pin) throw std::runtime_error("VIOManager: camera is not vk::PinholeCamera");
 
-// fx, fy：focal_length() 返回 Eigen::Vector2d
+// fx, fy from focal_length() -> Eigen::Vector2d
 const Eigen::Vector2d f = pin->focal_length();
-fx = f.x();          // 或 f[0]
-fy = f.y();          // 或 f[1]
+fx = f.x();
+fy = f.y();
 
-// 主点：优先用 K()（很多分支都有）
-const Eigen::Matrix3d K = pin->K();   // 如果这一行报错，见“查名并替换”小节
+// Principal point from intrinsics matrix K()
+const Eigen::Matrix3d K = pin->K();
 cx = K(0,2);
 cy = K(1,2);
 
@@ -151,7 +139,7 @@ image_resize_factor = 1.0;
     fout_camera << "# Camera list with one line of data per camera:\n";
     fout_camera << "#   CAMERA_ID, MODEL, WIDTH, HEIGHT, PARAMS[]\n";
     fout_camera << "1 PINHOLE " << width << " " << height << " "
-        << std::fixed << std::setprecision(6)  // 控制浮点数精度为10位
+        << std::fixed << std::setprecision(6)
         << fx << " " << fy << " "
         << cx << " " << cy << std::endl;
     fout_camera.close();
@@ -1789,10 +1777,10 @@ void VIOManager::dumpDataForColmap()
   Eigen::Quaterniond q(new_frame_->T_f_w_.rotation_matrix());
   Eigen::Vector3d t = new_frame_->T_f_w_.translation();
   fout_colmap << cnt << " "
-            << std::fixed << std::setprecision(6)  // 保证浮点数精度为6位
+            << std::fixed << std::setprecision(6)
             << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << " "
             << t.x() << " " << t.y() << " " << t.z() << " "
-            << 1 << " "  // CAMERA_ID (假设相机ID为1)
+            << 1 << " "  // CAMERA_ID fixed to 1
             << cnt_str << ".png" << std::endl;
   fout_colmap << "0.0 0.0 -1" << std::endl;
   cnt++;
