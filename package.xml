@@ -15,29 +15,28 @@
   <!-- build tool -->
   <buildtool_depend>catkin</buildtool_depend>
 
-  <!-- catkin package deps (与 CMakeLists.txt 保持一致) -->
+  <!-- catkin package deps (keep in sync with CMakeLists.txt) -->
   <depend>roscpp</depend>
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>tf</depend>
-  <depend>tf2</depend>        <!-- 新增 -->
-  <depend>tf2_ros</depend>    <!-- 新增 -->
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
   <depend>image_transport</depend>
   <depend>cv_bridge</depend>
   <depend>pcl_ros</depend>
 
-  <!-- 这些是你项目引用到的其它catkin包 -->
+  <!-- other catkin packages used by this project -->
   <depend>vikit_common</depend>
   <depend>vikit_ros</depend>
 
-  <!-- 只有在本包自己生成消息/服务时才需要。
-       若没有 .msg/.srv，可移除两行；不确定就先保留。 -->
+  <!-- message_generation / message_runtime: keep if this package builds .msg/.srv -->
   <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>
 
-  <!-- 可选：如果需要 rospy，就保留；否则可删 -->
+  <!-- optional: rospy -->
   <depend>rospy</depend>
 
   <test_depend>rostest</test_depend>
