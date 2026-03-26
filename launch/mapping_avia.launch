@@ -3,13 +3,13 @@
 
 	<arg name="rviz" default="true" />
 
-	<!-- 设置工作空间路径环境变量 -->
+	<!-- Package path for external tools -->
 	<env name="SC_FASTLIVO2" value="$(find fast_livo)" />
 	
-	<!-- 直接加载配置文件 -->
+	<!-- Load YAML config -->
 	<rosparam command="load" file="$(find fast_livo)/config/avia.yaml" />
 
-	<!-- 运行FAST-LIVO2主程序 -->
+	<!-- fastlivo_mapping -->
 	<node name="laserMapping" pkg="fast_livo" type="fastlivo_mapping" output="screen">
 		<rosparam file="$(find fast_livo)/config/camera_pinhole.yaml" />
 	</node>

@@ -6,6 +6,12 @@ Tightly coupled **LiDAR–inertial–visual odometry** built on [**FAST-LIVO2**]
 
 > **Publication:** Add your title, venue, and arXiv/DOI here when available.
 
+### Upstream baseline
+
+This project extends **[FAST-LIVO2: Fast, Direct LiDAR-Inertial-Visual Odometry](https://github.com/hku-mars/FAST-LIVO2)** from HKU Mars Lab. Use the official repository for the original implementation, datasets, and build prerequisites (ROS, PCL, Eigen, OpenCV, Vikit, Sophus, etc.):
+
+**https://github.com/hku-mars/FAST-LIVO2**
+
 ---
 
 ## Features
@@ -130,7 +136,7 @@ fast_livo/
 
 ## Acknowledgements
 
-Built on [**FAST-LIVO2**](https://github.com/hku-mars/FAST-LIVO2). Please cite the original work; if you publish derivatives, describe your PGO/back-end changes clearly.
+The odometry and mapping front end follows **[FAST-LIVO2](https://github.com/hku-mars/FAST-LIVO2)** ([`hku-mars/FAST-LIVO2`](https://github.com/hku-mars/FAST-LIVO2)). Please cite the FAST-LIVO2 paper and credit the upstream authors in any derivative work; clearly describe additions such as PGO integration and your loop-closure back end.
 
 ---
 

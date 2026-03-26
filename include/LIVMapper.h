@@ -63,15 +63,15 @@ public:
   template <typename T> Eigen::Matrix<T, 3, 1> pointBodyToWorld(const Eigen::Matrix<T, 3, 1> &pi);
   cv::Mat getImageFromMsg(const sensor_msgs::ImageConstPtr &img_msg);
 
-  // PGO相关回调函数
+  // PGO callbacks
   void pgoKeyframesCallback(const nav_msgs::Path::ConstPtr &msg);
   void pgoKeyframeIdsCallback(const std_msgs::Header::ConstPtr &msg);
 
-  // PGO状态更新函数
+  // PGO state / map updates
   void updateStateWithPGO();
   void rebuildLocalMapWithPGO();
 
-  // 关键帧管理和局部地图重建辅助函数
+  // Keyframe bookkeeping and local map helpers
   bool isKeyframe(const StatesGroup& current_state);
   void addKeyframe(const PointCloudXYZI::Ptr& cloud, const StatesGroup& state, double timestamp);
   void clearOldKeyframes();
@@ -189,34 +189,34 @@ public:
   ros::Publisher pubLaserCloudDyn;
   ros::Publisher pubLaserCloudDynRmed;
   ros::Publisher pubLaserCloudDynDbg;
-  ros::Publisher pubLaserCloudForPGO;  // 新增：为PGO发布的点云
+  ros::Publisher pubLaserCloudForPGO;  // point cloud for external PGO
   image_transport::Publisher pubImage;
   ros::Publisher mavros_pose_publisher;
   ros::Timer imu_prop_timer;
 
-  // PGO相关订阅者
+  // PGO subscribers
   ros::Subscriber subPGOKeyframes;
   ros::Subscriber subPGOKeyframeIds;
 
-  // PGO相关数据成员
-  nav_msgs::Path pgoKeyframes;           // PGO优化后的关键帧
-  std::queue<int> pgoKeyframeIds;        // PGO关键帧ID
-  bool pgo_integration_enable = true;   // PGO集成开关
-  int pgo_update_frequency = 10;         // PGO更新频率
-  int pgo_update_counter = 0;            // PGO更新计数器
-  bool pgo_state_update_enable = true;   // PGO状态更新开关
-  bool pgo_map_rebuild_enable = true;    // PGO地图重建开关
-  double pgo_update_weight = 0.05;        // PGO更新权重
-  double pgo_cov_weight = 0.95;           // PGO协方差权重
+  // PGO-related state
+  nav_msgs::Path pgoKeyframes;
+  std::queue<int> pgoKeyframeIds;
+  bool pgo_integration_enable = true;
+  int pgo_update_frequency = 10;
+  int pgo_update_counter = 0;
+  bool pgo_state_update_enable = true;
+  bool pgo_map_rebuild_enable = true;
+  double pgo_update_weight = 0.05;
+  double pgo_cov_weight = 0.95;
 
-  // 关键帧存储相关成员变量（用于局部地图重建）
-  std::vector<PointCloudXYZI::Ptr> cloudKeyFrames;        // 存储关键帧点云
-  std::vector<geometry_msgs::PoseStamped> keyframePoses;  // 存储关键帧位姿
-  std::vector<double> keyframeTimes;                       // 存储关键帧时间戳
-  int maxKeyframeNum = 500;                               // 最大关键帧数量（减少内存占用）
-  double keyframeMeterGap = 2.0;                          // 关键帧选择距离阈值（更保守）
-  double keyframeDegGap = 15.0;                           // 关键帧选择角度阈值（更保守）
-  double surroundingKeyframeSearchRadius = 3.0;            // 局部地图搜索半径（更小）
+  // Keyframes for local map rebuild
+  std::vector<PointCloudXYZI::Ptr> cloudKeyFrames;
+  std::vector<geometry_msgs::PoseStamped> keyframePoses;
+  std::vector<double> keyframeTimes;
+  int maxKeyframeNum = 500;
+  double keyframeMeterGap = 2.0;
+  double keyframeDegGap = 15.0;
+  double surroundingKeyframeSearchRadius = 3.0;
 
   int frame_num = 0;
   double aver_time_consu = 0;

@@ -1,11 +1,11 @@
 <launch>
-    <!-- 启动FAST-LIVO2 -->
+    <!-- FAST-LIVO2 front end -->
     <include file="$(find fast_livo)/launch/mapping_avia.launch" />
     
-    <!-- 启动PGO -->
+    <!-- PGO back end -->
     <include file="$(find aloam_velodyne)/launch/fastlivo2_pgo.launch" />
     
-    <!-- 可视化 -->
+    <!-- RViz -->
     <arg name="rviz" default="true" />
     <group if="$(arg rviz)">
         <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" 

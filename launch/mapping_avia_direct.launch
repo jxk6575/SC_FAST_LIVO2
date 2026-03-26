@@ -3,10 +3,10 @@
 
 	<arg name="rviz" default="true" />
 
-	<!-- 直接加载配置文件 -->
+	<!-- Load YAML config -->
 	<rosparam command="load" file="$(find fast_livo)/config/avia.yaml" />
 
-	<!-- 直接运行我们的可执行文件 -->
+	<!-- fastlivo_mapping node -->
 	<node name="laserMapping" pkg="fast_livo" type="fastlivo_mapping" output="screen">
 		<rosparam file="$(find fast_livo)/config/camera_pinhole.yaml" />
 	</node>
